@@ -1,0 +1,76 @@
+MySQL Schema
+sql
+-- Users Table
+CREATE TABLE users (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  role ENUM('admin', 'teacher', 'student') NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Students Table
+CREATE TABLE students (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  user_id INT REFERENCES users(id) ON DELETE CASCADE,
+  student_id VARCHAR(50) UNIQUE,
+  course_id INT REFERENCES courses(id),
+  enrollment_date DATE DEFAULT CURRENT_DATE,
+  status ENUM('active', 'inactive') DEFAULT 'active'
+);
+
+-- Teachers Table
+CREATE TABLE teachers (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  user_id INT REFERENCES users(id) ON DELETE CASCADE,
+  teacher_id VARCHAR(50) UNIQUE,
+  department VARCHAR(100) NOT NULL,
+  join_date DATE DEFAULT CURRENT_DATE,
+  status ENUM('active', 'inactive') DEFAULT 'active'
+);
+
+-- Courses Table
+CREATE TABLE courses (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(100) NOT NULL,
+  code VARCHAR(20) UNIQUE NOT NULL,
+  duration VARCHAR(50) NOT NULL,
+  description TEXT
+);
+
+-- Subjects Table
+CREATE TABLE subjects (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(100) NOT NULL,
+  code VARCHAR(20) UNIQUE NOT NULL,
+  course_id INT REFERENCES courses(id),
+  teacher_id INT REFERENCES teachers(id),
+  credits INT NOT NULL
+);
+
+-- Teacher_Subjects Junction Table (for many-to-many)
+CREATE TABLE teacher_subjects (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  teacher_id INT REFERENCES teachers(id),
+  subject_id INT REFERENCES subjects(id)
+);
+
+-- Attendance Table
+CREATE TABLE attendance (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  student_id INT REFERENCES students(id),
+  subject_id INT REFERENCES subjects(id),
+  date DATE NOT NULL,
+  status ENUM('present', 'absent', 'late') NOT NULL
+);
+
+-- Marks Table
+CREATE TABLE marks (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  student_id INT REFERENCES students(id),
+  subject_id INT REFERENCES subjects(id),
+  exam_type ENUM('midterm', 'final', 'quiz', 'assignment') NOT NULL,
+  marks DECIMAL(5,2) NOT NULL,
+  max_marks DECIMAL(5,2) NOT NULL
+);

@@ -1,0 +1,154 @@
+Create ONLY the BACKEND for a College Management System.
+
+⚠️ STRICT RULES:
+- Do NOT create any frontend files
+- Backend must be production-ready and deployable on Render
+- You ARE ALLOWED to modify or extend the database schema
+- Database design must START FROM THE PROVIDED SCHEMA
+- Generate proper documentation for frontend connection and Postman testing
+
+----------------------------------
+📁 BACKEND PROJECT STRUCTURE (STRICT)
+----------------------------------
+backend/
+ ├── config/
+ │     └── db.js
+ ├── controllers/
+ ├── routes/
+ ├── models/
+ ├── middleware/
+ ├── utils/
+ ├── app.js
+ ├── server.js
+ ├── package.json
+ ├── .env.example
+ ├── FRONTEND_CONNECTION_GUIDE.md
+ └── POSTMAN_RENDER_TESTING_GUIDE.md
+
+----------------------------------
+🔹 TECH STACK
+----------------------------------
+- Node.js
+- Express.js
+- MySQL (external DB: PlanetScale / Aiven / Railway)
+- mysql2
+- bcrypt
+- jsonwebtoken
+- dotenv
+- cors
+
+----------------------------------
+🔹 ROLES & BUSINESS RULES
+----------------------------------
+Roles:
+- admin
+- teacher
+- student
+
+Rules:
+1. Admin has DEFAULT credentials (auto-created on server start)
+2. Teachers can self-register but require ADMIN APPROVAL
+3. Students CANNOT self-register
+4. Students are created ONLY by Admin
+5. Inactive / unapproved users cannot login
+6. Role-based access control must be enforced everywhere
+
+----------------------------------
+🔹 ADMIN DEFAULT USER
+----------------------------------
+On server start, ensure an admin exists:
+Email: admin@college.com
+Password: admin123
+Role: admin
+(Password must be hashed using bcrypt)
+
+----------------------------------
+🔹 AUTHENTICATION & SECURITY
+----------------------------------
+- JWT-based authentication
+- Password hashing using bcrypt
+- Role-based authorization middleware
+- Status-based login restriction
+- Enable CORS for frontend usage
+- Use process.env.JWT_SECRET
+
+----------------------------------
+🔹 REQUIRED API ROUTES
+----------------------------------
+
+AUTH
+- POST /auth/login
+- POST /auth/teacher-register  
+  (creates teacher with status = pending/inactive)
+
+ADMIN (JWT + admin role required)
+- GET /admin/pending-teachers
+- PUT /admin/approve-teacher/:id
+- DELETE /admin/reject-teacher/:id
+- POST /admin/create-student
+
+STUDENTS (admin only)
+- GET /students
+- PUT /students/:id
+- DELETE /students/:id
+
+TEACHERS
+- GET /teachers
+
+----------------------------------
+🔹 DATABASE (MYSQL)
+----------------------------------
+- START FROM THE PROVIDED DATABASE SCHEMA
+- You MAY:
+  - Add status columns (pending / active / rejected)
+  - Add approval timestamps
+  - Add helper tables if required (approval logs, audit, etc.)
+- Do NOT remove core entities from the original schema
+- All schema changes must be clearly documented in code comments
+
+----------------------------------
+📄 FRONTEND_CONNECTION_GUIDE.md
+----------------------------------
+Create a detailed markdown guide including:
+1. Render backend base URL
+2. All API endpoints with HTTP methods
+3. Required headers (Authorization: Bearer <token>)
+4. Example request bodies (JSON)
+5. Example success & error responses
+6. Login flow for Admin / Teacher / Student
+7. Teacher registration & approval workflow
+8. Student creation workflow (Admin only)
+9. JWT storage & usage for frontend
+10. CORS behavior notes
+
+Guide must be ready to paste directly into Lovable AI.
+
+----------------------------------
+📄 POSTMAN_RENDER_TESTING_GUIDE.md
+----------------------------------
+Create a step-by-step Postman testing guide covering:
+- Admin login (default credentials)
+- Teacher registration
+- Teacher login blocked before approval
+- Admin approving / rejecting teachers
+- Student creation by admin
+- Student login
+- Role-based access denial
+- Expected HTTP status codes
+- Render-specific notes (cold start, ENV setup)
+
+----------------------------------
+🔹 RENDER DEPLOYMENT REQUIREMENTS
+----------------------------------
+- Use process.env.PORT
+- No hardcoded ports
+- Handle Render cold starts gracefully
+- Backend must run independently without frontend
+
+----------------------------------
+🔹 FINAL CONDITIONS
+----------------------------------
+- Backend must run independently
+- Code must be clean, modular, and commented
+- No frontend files should exist
+- Everything must work correctly on Render
