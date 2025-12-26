@@ -84,8 +84,23 @@ The API uses JWT (JSON Web Tokens) for authentication.
 ### 4. General
 - **GET /teachers**: List all teachers.
 
-## CORS
-CORS is enabled for all origins (`*`) to allow frontend development.
+## Teacher Registration & Approval Workflow
+1. Teacher registers via `POST /auth/teacher-register`. Initial status is `pending`.
+2. Admin logs in and views pending list via `GET /admin/pending-teachers`.
+3. Admin approves teacher via `PUT /admin/approve-teacher/:id` or rejects via `DELETE /admin/reject-teacher/:id`.
+4. Only approved (status: `active`) teachers can successfully log in via `POST /auth/login`.
+
+## Student Creation Workflow
+1. Admin logs in.
+2. Admin creates student via `POST /admin/create-student`.
+3. Students cannot self-register; they must use the credentials provided by the Admin.
+
+## JWT Storage & Usage
+- Store the token in `localStorage` or a secure cookie on the frontend.
+- Attach the token to the `Authorization` header as `Bearer <token>` for all protected requests.
+
+## CORS Behavior
+- CORS is globally enabled for all origins to facilitate frontend integration.
 
 ## Error Handling
 Errors return standard HTTP codes:
