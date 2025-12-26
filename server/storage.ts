@@ -1,11 +1,13 @@
 import { 
   users, students, teachers, courses,
-  type User, type Student, type Teacher, type Course,
-  type insertUserSchema, type insertStudentSchema, type insertTeacherSchema 
+  type User, type Student, type Teacher, type Course 
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+
+// Import necessary schemas directly since we can't type them as "type of" a variable in some cases
+import { insertUserSchema, insertStudentSchema, insertTeacherSchema } from "@shared/schema";
 
 export interface IStorage {
   // User operations
@@ -120,13 +122,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteStudent(id: number): Promise<void> {
-    // Note: User will be deleted by cascade if we were deleting user, 
-    // but here we might just be removing student record or handling cascading manually if needed.
-    // However, schema says ON DELETE CASCADE for student -> user relation is usually User -> Student.
-    // The schema provided has `user_id INT REFERENCES users(id) ON DELETE CASCADE` in students table.
-    // So if we delete the USER, the STUDENT is deleted.
-    // If we delete the STUDENT, the USER remains? 
-    // Usually we want to delete the User account too.
     const student = await db.query.students.findFirst({
       where: eq(students.id, id)
     });

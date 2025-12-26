@@ -36,21 +36,34 @@ const requireRole = (roles: string[]) => {
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
   // Enable CORS
   app.use(cors());
+
+  // Root route for verification
+  app.get("/", (req, res) => {
+    res.json({ 
+      message: "College Management System Backend is running",
+      documentation: "/api-docs (placeholder)",
+      status: "ready"
+    });
+  });
   
   // Seed Admin User
   const ensureAdmin = async () => {
-    const adminEmail = "admin@college.com";
-    const existingAdmin = await storage.getUserByEmail(adminEmail);
-    if (!existingAdmin) {
-      console.log("Creating default admin user...");
-      const hashedPassword = await bcrypt.hash("admin123", SALT_ROUNDS);
-      await storage.createUser({
-        name: "Admin User",
-        email: adminEmail,
-        password: hashedPassword,
-        role: "admin",
-      });
-      console.log("Default admin created.");
+    try {
+      const adminEmail = "admin@college.com";
+      const existingAdmin = await storage.getUserByEmail(adminEmail);
+      if (!existingAdmin) {
+        console.log("Creating default admin user...");
+        const hashedPassword = await bcrypt.hash("admin123", SALT_ROUNDS);
+        await storage.createUser({
+          name: "Admin User",
+          email: adminEmail,
+          password: hashedPassword,
+          role: "admin",
+        });
+        console.log("Default admin created.");
+      }
+    } catch (err) {
+      console.error("Error seeding admin:", err);
     }
   };
   
@@ -73,8 +86,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
-      // Check status for teachers/students if implemented.
-      // For teachers, we need to check if they are active.
       if (user.role === 'teacher') {
         const teacher = await storage.getTeacherByUserId(user.id);
         if (teacher && teacher.status !== 'active') {
@@ -114,11 +125,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       await storage.createTeacher(user.id, {
         department: data.department,
-        teacherId: `T${Date.now()}` // Generate simple ID
+        teacherId: `T${Date.now()}` 
       });
 
       res.status(201).json({ message: "Teacher registered successfully. Pending approval." });
     } catch (e) {
+      console.error("Registration error:", e);
       res.status(400).json({ message: "Validation failed" });
     }
   });
@@ -126,36 +138,36 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // --- ADMIN ROUTES ---
 
   app.get("/admin/pending-teachers", authenticateToken, requireRole(['admin']), async (req, res) => {
-    const teachers = await storage.getPendingTeachers();
-    res.json(teachers);
+    try {
+      const teachers = await storage.getPendingTeachers();
+      res.json(teachers);
+    } catch (e) {
+      res.status(500).json({ message: "Error fetching pending teachers" });
+    }
   });
 
   app.put("/admin/approve-teacher/:id", authenticateToken, requireRole(['admin']), async (req, res) => {
-    const teacherId = parseInt(req.params.id);
-    if (isNaN(teacherId)) return res.status(400).json({ message: "Invalid ID" });
-    
-    await storage.updateTeacherStatus(teacherId, "active");
-    res.json({ message: "Teacher approved successfully" });
+    try {
+      const teacherId = parseInt(req.params.id);
+      if (isNaN(teacherId)) return res.status(400).json({ message: "Invalid ID" });
+      
+      await storage.updateTeacherStatus(teacherId, "active");
+      res.json({ message: "Teacher approved successfully" });
+    } catch (e) {
+      res.status(500).json({ message: "Error approving teacher" });
+    }
   });
 
   app.delete("/admin/reject-teacher/:id", authenticateToken, requireRole(['admin']), async (req, res) => {
-    const teacherId = parseInt(req.params.id);
-    if (isNaN(teacherId)) return res.status(400).json({ message: "Invalid ID" });
-
-    // In a real app we might want to delete the user too, or just mark as rejected.
-    // The requirement says "DELETE /admin/reject-teacher/:id".
-    // We'll interpret this as rejecting the application (updating status) or deleting.
-    // Let's update status to rejected to keep record, or we could delete.
-    // Prompt said "DELETE", so let's try to delete the teacher record?
-    // But usually rejection just means setting status to 'rejected'.
-    // Let's set status to rejected for now as it's safer. 
-    // Actually, prompt says "DELETE ...", implying removal.
-    // But wait, if we delete the teacher row, what happens to the user row?
-    // Let's just update status to rejected for safety, 
-    // OR actually delete the user if they were just pending.
-    
-    await storage.updateTeacherStatus(teacherId, "rejected");
-    res.json({ message: "Teacher rejected" });
+    try {
+      const teacherId = parseInt(req.params.id);
+      if (isNaN(teacherId)) return res.status(400).json({ message: "Invalid ID" });
+      
+      await storage.updateTeacherStatus(teacherId, "rejected");
+      res.json({ message: "Teacher rejected" });
+    } catch (e) {
+      res.status(500).json({ message: "Error rejecting teacher" });
+    }
   });
 
   app.post("/admin/create-student", authenticateToken, requireRole(['admin']), async (req, res) => {
@@ -187,34 +199,48 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
-  // --- STUDENT ROUTES (Admin Only as per requirements) ---
+  // --- STUDENT ROUTES ---
 
   app.get("/students", authenticateToken, requireRole(['admin']), async (req, res) => {
-    const students = await storage.getAllStudents();
-    res.json(students);
+    try {
+      const students = await storage.getAllStudents();
+      res.json(students);
+    } catch (e) {
+      res.status(500).json({ message: "Error fetching students" });
+    }
   });
 
   app.put("/students/:id", authenticateToken, requireRole(['admin']), async (req, res) => {
-    // This would allow updating student details
-    const id = parseInt(req.params.id);
-    const updated = await storage.updateStudent(id, req.body);
-    res.json(updated);
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      const updated = await storage.updateStudent(id, req.body);
+      res.json(updated);
+    } catch (e) {
+      res.status(400).json({ message: "Update failed" });
+    }
   });
 
   app.delete("/students/:id", authenticateToken, requireRole(['admin']), async (req, res) => {
-    const id = parseInt(req.params.id);
-    await storage.deleteStudent(id);
-    res.json({ message: "Student deleted" });
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      await storage.deleteStudent(id);
+      res.json({ message: "Student deleted" });
+    } catch (e) {
+      res.status(500).json({ message: "Deletion failed" });
+    }
   });
 
   // --- TEACHER ROUTES ---
 
   app.get("/teachers", authenticateToken, async (req, res) => {
-    // Teachers list might be visible to all authenticated users? 
-    // Or maybe just admin? The prompt didn't specify restriction, just "GET /teachers".
-    // We'll allow all authenticated users for now.
-    const teachers = await storage.getAllTeachers();
-    res.json(teachers);
+    try {
+      const teachers = await storage.getAllTeachers();
+      res.json(teachers);
+    } catch (e) {
+      res.status(500).json({ message: "Error fetching teachers" });
+    }
   });
 
   return httpServer;
