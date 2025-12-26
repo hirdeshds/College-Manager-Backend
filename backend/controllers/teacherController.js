@@ -1,11 +1,9 @@
-const pool = require('../config/db');
+const Teacher = require('../models/Teacher');
 
 const getAllTeachers = async (req, res) => {
   try {
-    const [rows] = await pool.query(
-      'SELECT t.*, u.name, u.email FROM teachers t JOIN users u ON t.user_id = u.id'
-    );
-    res.json(rows);
+    const teachers = await Teacher.findAll();
+    res.json(teachers);
   } catch (err) {
     res.status(500).json({ message: "Error fetching teachers" });
   }

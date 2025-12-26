@@ -1,13 +1,12 @@
+const User = require('../models/User');
+const Teacher = require('../models/Teacher');
+const Student = require('../models/Student');
 const bcrypt = require('bcrypt');
-const pool = require('../config/db');
 
 const getPendingTeachers = async (req, res) => {
   try {
-    const [rows] = await pool.query(
-      'SELECT t.*, u.name, u.email FROM teachers t JOIN users u ON t.user_id = u.id WHERE t.status = ?',
-      ['pending']
-    );
-    res.json(rows);
+    const teachers = await Teacher.findPending();
+    res.json(teachers);
   } catch (err) {
     res.status(500).json({ message: "Error fetching pending teachers" });
   }
@@ -16,7 +15,7 @@ const getPendingTeachers = async (req, res) => {
 const approveTeacher = async (req, res) => {
   const { id } = req.params;
   try {
-    await pool.query('UPDATE teachers SET status = ? WHERE id = ?', ['active', id]);
+    await Teacher.updateStatus(id, 'active');
     res.json({ message: "Teacher approved" });
   } catch (err) {
     res.status(500).json({ message: "Error approving teacher" });
@@ -26,7 +25,7 @@ const approveTeacher = async (req, res) => {
 const rejectTeacher = async (req, res) => {
   const { id } = req.params;
   try {
-    await pool.query('UPDATE teachers SET status = ? WHERE id = ?', ['rejected', id]);
+    await Teacher.updateStatus(id, 'rejected');
     res.json({ message: "Teacher rejected" });
   } catch (err) {
     res.status(500).json({ message: "Error rejecting teacher" });
@@ -37,18 +36,10 @@ const createStudent = async (req, res) => {
   const { name, email, password, studentId, courseId } = req.body;
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-    const [rows] = await pool.query(
-      'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?) RETURNING id',
-      [name, email, hashedPassword, 'student']
-    );
-    const userId = rows[0].id;
-    await pool.query(
-      'INSERT INTO students (user_id, student_id, course_id, status) VALUES (?, ?, ?, ?)',
-      [userId, studentId, courseId, 'active']
-    );
+    const user = await User.create(name, email, hashedPassword, 'student');
+    await Student.create(user.id, studentId, courseId);
     res.status(201).json({ message: "Student created" });
   } catch (err) {
-    console.error(err);
     res.status(400).json({ message: "Error creating student" });
   }
 };
